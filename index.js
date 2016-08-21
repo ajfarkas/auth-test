@@ -1,12 +1,13 @@
+// from http://blog.slatepeak.com/refactoring-a-basic-authenticated-api-with-node-express-and-mongo/
+
 var express = require('express'),
     app = express(),
     bodyParser = require('body-parser'),
-    config = require('./config'),
-    levelup = require('levelup'),
-    db = levelup(config.db)
+    config = require('./config/main'),
+    levelup = require('levelup')
 
 var server = app.listen(config.port)
-console.log('server listening at port' + config.port)
+console.log('server listening at port ' + config.port)
 
 // Enable CORS from client-side
 app.use(function(req, res, next) { 
@@ -17,3 +18,8 @@ app.use(function(req, res, next) {
   next()
 })
 
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyParser.json())
+
+var router = require('./router')
+router(app)

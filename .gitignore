@@ -1,5 +1,5 @@
 # files
-config.js
+.DS_Store
 
 # Folders
 node_modules/

@@ -60,26 +60,28 @@ Export.register = function(req, res, next) {
       return res.status(422).send({ error: ['That email address is already in use.'] })
     } 
 
-    var newUser = user.createUser({
+    user.createUser({
       email: email,
       password: password,
       profile: {
         firstname: firstname,
         lastname: lastname
       }
+    }, function(newUser) {
+      db.put('user_'+newUser.email, newUser, { valueEncoding: 'json' }, function(err) {
+        if (err) {
+          return console.error('register PUT error: '+err)
+        }
+        console.log('new user created: '+newUser._id)
+
+        delete newUser.hash
+        res.status(201).json({
+          token: 'JWT '+generateToken(newUser),
+          user: newUser
+        })
+      })
     })
 
-    db.put('user_'+newUser.email, newUser, function(err) {
-      if (err) {
-        return console.error(err)
-      }
-      console.log('new user created: '+newUser._id)
-    })
-
-    res.status(201).json({
-      token: 'JWT '+generateToken(newUser),
-      user: newUser
-    })
   })
 }
 

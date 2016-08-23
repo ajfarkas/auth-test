@@ -26,53 +26,8 @@ User.UserSchema = {
   resetPasswordExpires: { type: 'date' }
 }
 
-// `data` is `json object` of UserSchema
-User.createUser = function(data) {
-  var user = {}
-  Object.keys(User.UserSchema).forEach(function(key) {
-    var reqs = User.UserSchema[key]
-    if (reqs.required && !data[key]) {
-      return new Error('required field '+key+' not passed to User.createUser!')
-    } else if (!reqs.required && !data[key]) {
-      if (reqs.default) {
-        user[key] = reqs.default
-      } else {
-        user[key] = null
-      }
-    }
-
-    if (reqs.type !== typeof key &&
-               (reqs.type === 'date' && (!data[key] instanceof Date)) ) {
-      return new Error('typeof '+key+' does not match UserSchema!')
-    }
-
-    if (reqs.enum && reqs.enum.indexOf(data[key]) < 0) {
-      user[key] = reqs.default
-    } else if (key === 'profile') {
-      user[key] = {}
-      var nestedKeys = Object.keys(reqs)
-      nestedKeys.forEach(function(nKey) {
-        var nReq = reqs[nKey]
-        if (typeof nKey !== nReq.type) {
-          return new Error('typeof '+nKey+' does not match UserSchema!')
-        }
-
-        user[key][nKey] = data[key][nKey]
-      })
-    } else {
-      if (reqs.lowercase) {
-        user[key] = data[key].toLowerCase()
-      } else {
-        user[key] = data[key]
-      }
-    }
-  })
-
-  user._id = uuid.v4()
-  return user
-}
 // `password` is `string`
-User.hashPass = function(password) {
+User.hashPass = function(password, next) {
   var SaltFactor = 5
 
   bcrypt.genSalt(SaltFactor, function(err, salt) {
@@ -84,24 +39,23 @@ User.hashPass = function(password) {
       if (errB) {
         return console.error(errB)
       }
-
-      password = hash
+      next(hash)
     })
   })
 
-  return password
 }
 /* `candidate` is user-input password `string`
  * `hashedPass` is saved and hashed password `string`
- * `cb` is callback function, which is passed an `error` and `boolean`
+ * `next` is callback function, which is passed an `error` and `boolean`
 */
-User.comparePass = function(candidate, hashedPass, cb) {
+User.comparePass = function(candidate, hashedPass, next) {
+  console.log("comparepass: "+candidate, hashedPass)
   return bcrypt.compare(candidate, hashedPass, function(err, isMatch) {
-    if (typeof cb === 'function') {
+    if (typeof next === 'function') {
       if (err) {
-        return cb(err)
+        return next(err)
       }
-      return cb(null, isMatch)
+      return next(null, isMatch)
     } else {
       if (err) {
         return console.error(err)
@@ -111,5 +65,24 @@ User.comparePass = function(candidate, hashedPass, cb) {
   })
 }
 
+/* `data` is `json object` of UserSchema
+ * `next` is callback function, which is passed the user object
+*/
+User.createUser = function(data, next) {
+  var user = {  
+    email: data.email.toLowerCase(),
+    profile: data.profile,
+    role: data.role || 'Member',
+    resetPasswordToken: data.resetPasswordToken || null,
+    resetPasswordExpires: data.resetPasswordExpires || null
+  }
+
+  User.hashPass(data.password, function(hash) {
+    user.hash = hash
+    user._id = uuid.v4()
+    next(user)
+  })
+  
+}
 
 module.exports = User

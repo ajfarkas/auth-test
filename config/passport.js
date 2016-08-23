@@ -18,12 +18,13 @@ var localLogin = new localStrategy(localOptions, function(email, password, done)
       if (err.notFound) {
         return done(null, false, { error: loginFail })
       } else {
-        return console.error(err)
+        return console.error('localLogin, passport.js: '+err)
       }
     }
 
-    User.comparePass(password, data.password, function(err, isMatch) {
+    User.comparePass(password, data.hash, function(err, isMatch) {
       if (err) {
+        console.log("comparePass err: "+err)
         return done(err)
       }
 

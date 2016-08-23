@@ -1,5 +1,7 @@
 # files
 .DS_Store
+auth_notes.txt
 
 # Folders
 node_modules/
+database/

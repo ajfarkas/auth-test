@@ -87,10 +87,14 @@ Export.register = function(req, res, next) {
 
 // Role Authorization
 Export.roleAuthorization = function(role) {
-  return function (req, res, next) {
-    var user = req.user
+  return function(req, res, next) {
+    try {
+      var user = jwt.verify(req.headers.authorization, config.secret)
+    } catch(err) {
+      return next('Unauthorized. Invalid JWT.')
+    }
 
-    db.get('user_'+user.email, function(err, foundUser) {
+    db.get('user_'+user.email, { valueEncoding: 'json' }, function(err, foundUser) {
       if (err) {
         res.status(422).json({ error: ['Your login details could not be verified. Please try again.'] })
         return next(err)
@@ -98,6 +102,31 @@ Export.roleAuthorization = function(role) {
 
       if (foundUser.role === role) {
         return next()
+      } else {
+        res.status(401).json({ error: ['You are not authorized to view this content.'] })
+        return next('Unauthorized')
+      }
+    })
+  }
+}
+
+// User Permission Authorization
+Export.authProtectedContent = function(content) {
+  return function(req, res, next) {
+    try {
+      var user = jwt.verify(req.headers.authorization, config.secret)
+    } catch(err) {
+      return next('Unauthorized. Invalid JWT.')
+    }
+
+    db.get('content_'+content, function(err, data) {
+      if (err) {
+        res.status(422).json({ error: ['Your login details could not be verified. Please try again.'] })
+        return next(err)
+      }
+
+      if (data.users && data.users.indexof(user._id) >= 0) {
+        res.status(200).json({ content: 'yes, have some.' })
       } else {
         res.status(401).json({ error: ['You are not authorized to view this content.'] })
         return next('Unauthorized')

@@ -45,8 +45,7 @@ var jwtOptions = {
 }
 
 var jwtLogin = new jwtStrategy(jwtOptions, function(payload, done) {
-  console.log('payload: '+payload)
-  return db.get('user_'+payload._id, { valueEncoding: 'json' }, function(err, data) {
+  return db.get('user_'+payload.email, { valueEncoding: 'json' }, function(err, data) {
     if (err) {
       if (err.notFound) {
         return done(null, false)

@@ -15,6 +15,13 @@ module.exports = function(app) {
       authRoutes = express.Router()
 
   apiRoutes.use('/auth', authRoutes)
+  apiRoutes.get('/test', requireAuth, function(req, res, next) {
+    res.status(200).json({
+      success: 'authenticated user!',
+      headers: Object.keys(req.headers),
+      authinfo: req.headers.authorization
+    })
+  })
 
   authRoutes.post('/register', authenticationController.register)
 

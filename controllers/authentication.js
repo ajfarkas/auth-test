@@ -85,13 +85,22 @@ Export.register = function(req, res, next) {
   })
 }
 
+function extractJWT(req) {
+  var auth = req.headers.authorization
+  if (auth && auth.match(/^JWT\s.*/)) {
+    return auth.replace('JWT ', '')
+  } else {
+    throw new Error('No JWT in headers.')
+  }
+}
+
 // Role Authorization
 Export.roleAuthorization = function(role) {
   return function(req, res, next) {
     try {
-      var user = jwt.verify(req.headers.authorization, config.secret)
+      var user = jwt.verify(extractJWT(req), config.secret)
     } catch(err) {
-      return next('Unauthorized. Invalid JWT.')
+      return next('Unauthorized. Invalid JWT. '+err)
     }
 
     db.get('user_'+user.email, { valueEncoding: 'json' }, function(err, foundUser) {
@@ -114,7 +123,7 @@ Export.roleAuthorization = function(role) {
 Export.authProtectedContent = function(content) {
   return function(req, res, next) {
     try {
-      var user = jwt.verify(req.headers.authorization, config.secret)
+      var user = jwt.verify(extractJWT(req), config.secret)
     } catch(err) {
       return next('Unauthorized. Invalid JWT.')
     }
